@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/admin/"
+title = "HelpDesk Admin"
+version = "1.0.0"
+id = "artifacts/helpdesk-admin"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/admin/" ]
+localPort = 24364
+
+[services.development]
+run = "pnpm --filter @workspace/helpdesk-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/helpdesk-admin", "run", "build" ]
+publicDir = "artifacts/helpdesk-admin/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24364"
+BASE_PATH = "/admin/"

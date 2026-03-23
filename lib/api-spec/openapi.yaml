@@ -1,15 +1,22 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: HelpDesk Enterprise API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: departments
+    description: Department operations
+  - name: tickets
+    description: Ticket operations
+  - name: comments
+    description: Comment operations
+  - name: users
+    description: User operations
 paths:
   /healthz:
     get:
@@ -24,6 +31,261 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /departments:
+    get:
+      operationId: getDepartments
+      tags: [departments]
+      summary: Get all departments
+      responses:
+        "200":
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Department"
+    post:
+      operationId: createDepartment
+      tags: [departments]
+      summary: Create a department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepartmentInput"
+      responses:
+        "201":
+          description: Created department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+
+  /departments/{id}:
+    get:
+      operationId: getDepartment
+      tags: [departments]
+      summary: Get a department by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "404":
+          description: Not found
+
+  /tickets:
+    get:
+      operationId: getTickets
+      tags: [tickets]
+      summary: Get all tickets
+      parameters:
+        - name: departmentId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, in_progress, resolved, closed]
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: createdBy
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+    post:
+      operationId: createTicket
+      tags: [tickets]
+      summary: Create a ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTicketInput"
+      responses:
+        "201":
+          description: Created ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+
+  /tickets/{id}:
+    get:
+      operationId: getTicket
+      tags: [tickets]
+      summary: Get a ticket by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTicket
+      tags: [tickets]
+      summary: Update a ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTicketInput"
+      responses:
+        "200":
+          description: Updated ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+    delete:
+      operationId: deleteTicket
+      tags: [tickets]
+      summary: Delete a ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /tickets/{id}/comments:
+    get:
+      operationId: getTicketComments
+      tags: [comments]
+      summary: Get comments for a ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Add a comment to a ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentInput"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /users:
+    get:
+      operationId: getUsers
+      tags: [users]
+      summary: Get all users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create or get a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: Created or existing user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [tickets]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +296,239 @@ components:
       required:
         - status
 
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+        ticketCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - icon
+        - color
+        - ticketCount
+        - createdAt
+
+    CreateDepartmentInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        color:
+          type: string
+        contactEmail:
+          type: string
+        contactPhone:
+          type: string
+      required:
+        - name
+        - icon
+        - color
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        departmentId:
+          type: integer
+        departmentName:
+          type: string
+        createdBy:
+          type: string
+        assignedTo:
+          type: string
+        commentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - description
+        - status
+        - priority
+        - departmentId
+        - createdBy
+        - commentCount
+        - createdAt
+        - updatedAt
+
+    CreateTicketInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        departmentId:
+          type: integer
+        createdBy:
+          type: string
+      required:
+        - title
+        - description
+        - priority
+        - departmentId
+        - createdBy
+
+    UpdateTicketInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        assignedTo:
+          type: string
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        ticketId:
+          type: integer
+        content:
+          type: string
+        authorName:
+          type: string
+        isInternal:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - ticketId
+        - content
+        - authorName
+        - isInternal
+        - createdAt
+
+    CreateCommentInput:
+      type: object
+      properties:
+        content:
+          type: string
+        authorName:
+          type: string
+        isInternal:
+          type: boolean
+      required:
+        - content
+        - authorName
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [employee, manager, admin]
+        departmentId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+
+    CreateUserInput:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [employee, manager, admin]
+        departmentId:
+          type: integer
+      required:
+        - name
+        - email
+        - role
+
+    Stats:
+      type: object
+      properties:
+        totalTickets:
+          type: integer
+        openTickets:
+          type: integer
+        inProgressTickets:
+          type: integer
+        resolvedTickets:
+          type: integer
+        closedTickets:
+          type: integer
+        urgentTickets:
+          type: integer
+        totalDepartments:
+          type: integer
+        totalUsers:
+          type: integer
+      required:
+        - totalTickets
+        - openTickets
+        - inProgressTickets
+        - resolvedTickets
+        - closedTickets
+        - urgentTickets
+        - totalDepartments
+        - totalUsers

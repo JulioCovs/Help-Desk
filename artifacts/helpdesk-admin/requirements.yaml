@@ -1,0 +1,15 @@
+packages:
+  "framer-motion": "Smooth page transitions and component animations"
+  "recharts": "Beautiful data visualization for the dashboard"
+  "date-fns": "Formatting dates in tickets and comments"
+  "clsx": "Constructing class names conditionally"
+  "tailwind-merge": "Merging tailwind classes without style conflicts"
+
+images:
+  - path: "artifacts/helpdesk-admin/public/images/logo.png"
+    description: "Minimal modern geometric logo mark in deep indigo blue, abstract letter H, clean professional SaaS style, transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - Using generated API hooks from @workspace/api-client-react
+  - React 19 + Tailwind v4 + Wouter setup
