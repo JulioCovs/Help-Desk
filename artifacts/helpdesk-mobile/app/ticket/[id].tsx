@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import {
   useGetTicket,
   useGetTicketComments,
