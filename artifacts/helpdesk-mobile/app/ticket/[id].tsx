@@ -127,8 +127,13 @@ export default function TicketDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["getTicket", ticketId] });
       queryClient.invalidateQueries({ queryKey: ["getTickets"] });
       queryClient.invalidateQueries({ queryKey: ["getStats"] });
-    } catch {
-      Alert.alert("Error", "No se pudo actualizar el estado");
+    } catch (err: any) {
+      console.error("[handleStatusChange] error:", err);
+      const msg =
+        err?.message ||
+        err?.errorData?.message ||
+        (typeof err === "string" ? err : "No se pudo actualizar el estado");
+      Alert.alert("Error", msg);
     }
   };
 
