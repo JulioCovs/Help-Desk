@@ -215,25 +215,73 @@ export default function TicketDetailScreen() {
             <Text style={styles.description}>{ticket.description}</Text>
           </View>
 
-          {/* Status Changer */}
+          {/* Progress Bar */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Cambiar Estado</Text>
-            <View style={styles.statusRow}>
-              {STATUS_OPTIONS.map((s) => (
-                <Pressable
-                  key={s.value}
-                  onPress={() => handleStatusChange(s.value)}
-                  style={[
-                    styles.statusChip,
-                    { backgroundColor: s.bg },
-                    ticket.status === s.value && { borderWidth: 2, borderColor: s.color },
-                  ]}
-                >
-                  <Text style={[styles.statusChipText, { color: s.color }]}>{s.label}</Text>
-                </Pressable>
-              ))}
+            <View style={styles.progressHeader}>
+              <Text style={styles.sectionTitle}>Progreso de reparación</Text>
+              <Text style={[styles.progressPct, (ticket.progress ?? 0) === 100 && { color: Colors.light.statusResolved }]}>
+                {ticket.progress ?? 0}%
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${ticket.progress ?? 0}%` as any,
+                    backgroundColor:
+                      (ticket.progress ?? 0) === 100
+                        ? Colors.light.statusResolved
+                        : Colors.light.tint,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.progressLabels}>
+              <Text style={styles.progressLabelText}>0%</Text>
+              <Text style={styles.progressLabelText}>50%</Text>
+              <Text style={styles.progressLabelText}>100%</Text>
             </View>
           </View>
+
+          {/* Visto Bueno or Status Info */}
+          {ticket.status === "resolved" ? (
+            <View style={styles.vistoBuenoSection}>
+              <Feather name="check-circle" size={28} color={Colors.light.statusResolved} />
+              <Text style={styles.vistoBuenoTitle}>¡La reparación está lista!</Text>
+              <Text style={styles.vistoBuenoSubtitle}>
+                El equipo técnico marcó este ticket como resuelto. Si el problema fue corregido, da tu visto bueno para cerrarlo.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    "Dar Visto Bueno",
+                    "¿Confirmas que el problema fue resuelto correctamente?",
+                    [
+                      { text: "Cancelar", style: "cancel" },
+                      {
+                        text: "Sí, confirmar",
+                        style: "default",
+                        onPress: () => handleStatusChange("closed"),
+                      },
+                    ]
+                  );
+                }}
+                style={({ pressed }) => [styles.vistoBuenoBtn, pressed && { opacity: 0.85 }]}
+              >
+                <Feather name="thumbs-up" size={18} color="#fff" />
+                <Text style={styles.vistoBuenoBtnText}>Dar Visto Bueno</Text>
+              </Pressable>
+            </View>
+          ) : ticket.status === "closed" ? (
+            <View style={[styles.vistoBuenoSection, styles.closedSection]}>
+              <Feather name="check-square" size={28} color={Colors.light.statusClosed} />
+              <Text style={[styles.vistoBuenoTitle, { color: Colors.light.statusClosed }]}>Ticket cerrado</Text>
+              <Text style={styles.vistoBuenoSubtitle}>
+                Ya diste el visto bueno a este ticket. El problema quedó resuelto.
+              </Text>
+            </View>
+          ) : null}
 
           {/* Comments */}
           <View style={styles.section}>
@@ -373,6 +421,85 @@ const styles = StyleSheet.create({
   statusChipText: {
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
+  },
+  progressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  progressPct: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.tint,
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: Colors.light.cardBorder,
+    borderRadius: 6,
+    overflow: "hidden",
+    marginBottom: 6,
+  },
+  progressFill: {
+    height: 10,
+    borderRadius: 6,
+    minWidth: 4,
+  },
+  progressLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  progressLabelText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textTertiary,
+  },
+  vistoBuenoSection: {
+    backgroundColor: Colors.light.statusResolvedBg,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.light.statusResolved,
+    padding: 20,
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 20,
+  },
+  closedSection: {
+    backgroundColor: Colors.light.statusClosedBg,
+    borderColor: Colors.light.statusClosed,
+  },
+  vistoBuenoTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.statusResolved,
+    textAlign: "center",
+  },
+  vistoBuenoSubtitle: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  vistoBuenoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.light.statusResolved,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 4,
+    shadowColor: Colors.light.statusResolved,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  vistoBuenoBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
   },
   bubble: {
     maxWidth: "80%",

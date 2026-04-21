@@ -22,6 +22,7 @@ router.get("/tickets", async (req, res) => {
         description: ticketsTable.description,
         status: ticketsTable.status,
         priority: ticketsTable.priority,
+        progress: ticketsTable.progress,
         departmentId: ticketsTable.departmentId,
         departmentName: departmentsTable.name,
         createdBy: ticketsTable.createdBy,
@@ -73,6 +74,7 @@ router.get("/tickets/:id", async (req, res) => {
         description: ticketsTable.description,
         status: ticketsTable.status,
         priority: ticketsTable.priority,
+        progress: ticketsTable.progress,
         departmentId: ticketsTable.departmentId,
         departmentName: departmentsTable.name,
         createdBy: ticketsTable.createdBy,
@@ -98,7 +100,7 @@ router.get("/tickets/:id", async (req, res) => {
 router.patch("/tickets/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { title, description, status, priority, assignedTo } = req.body;
+    const { title, description, status, priority, assignedTo, progress } = req.body;
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
@@ -106,6 +108,7 @@ router.patch("/tickets/:id", async (req, res) => {
     if (status !== undefined) updateData.status = status;
     if (priority !== undefined) updateData.priority = priority;
     if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+    if (progress !== undefined) updateData.progress = Math.max(0, Math.min(100, Number(progress)));
 
     const [ticket] = await db
       .update(ticketsTable)

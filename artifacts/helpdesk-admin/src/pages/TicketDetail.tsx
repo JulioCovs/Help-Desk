@@ -12,7 +12,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatusBadge, PriorityBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ArrowLeft, MessageSquare, Trash2, Calendar, User, Building2, Save } from "lucide-react";
+import { ArrowLeft, MessageSquare, Trash2, Calendar, User, Building2, Save, Gauge } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default function TicketDetail() {
@@ -33,6 +33,7 @@ export default function TicketDetail() {
   
   const [statusEdit, setStatusEdit] = useState<string | null>(null);
   const [priorityEdit, setPriorityEdit] = useState<string | null>(null);
+  const [progressEdit, setProgressEdit] = useState<number | null>(null);
 
   if (isTicketLoading) {
     return (
@@ -60,15 +61,18 @@ export default function TicketDetail() {
       const data: any = {};
       if (statusEdit) data.status = statusEdit;
       if (priorityEdit) data.priority = priorityEdit;
-      
+      if (progressEdit !== null) data.progress = progressEdit;
+
       await updateMutation.mutateAsync({ id: ticketId, data });
-      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/tickets/${ticketId}`] });
+      queryClient.invalidateQueries({ queryKey: ["getTickets"] });
+      queryClient.invalidateQueries({ queryKey: ["getTicket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["getStats"] });
       setStatusEdit(null);
       setPriorityEdit(null);
+      setProgressEdit(null);
     } catch (e) {
       console.error(e);
-      alert("Failed to update ticket");
+      alert("No se pudo actualizar el ticket");
     }
   };
 
@@ -100,7 +104,8 @@ export default function TicketDetail() {
     }
   };
 
-  const hasChanges = statusEdit || priorityEdit;
+  const hasChanges = statusEdit || priorityEdit || progressEdit !== null;
+  const currentProgress = progressEdit !== null ? progressEdit : (ticket?.progress ?? 0);
 
   return (
     <Layout>
@@ -210,30 +215,76 @@ export default function TicketDetail() {
                   onChange={(e) => setStatusEdit(e.target.value !== ticket.status ? e.target.value : null)}
                   className="w-full h-11 px-4 rounded-xl border-2 border-border bg-background text-sm font-semibold focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
                 >
-                  <option value="open">Open</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
+                  <option value="open">Abierto</option>
+                  <option value="in_progress">En progreso</option>
+                  <option value="resolved">Resuelto</option>
+                  <option value="closed">Cerrado</option>
                 </select>
               </div>
               
               <div className="space-y-2">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Priority</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Prioridad</label>
                 <select 
                   value={priorityEdit || ticket.priority}
                   onChange={(e) => setPriorityEdit(e.target.value !== ticket.priority ? e.target.value : null)}
                   className="w-full h-11 px-4 rounded-xl border-2 border-border bg-background text-sm font-semibold focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                  <option value="low">Baja</option>
+                  <option value="medium">Media</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
                 </select>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Gauge className="w-3.5 h-3.5" /> Progreso de reparación
+                  </label>
+                  <span className="text-lg font-bold text-primary">{currentProgress}%</span>
+                </div>
+                <div className="relative">
+                  <div className="w-full h-3 bg-secondary rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${currentProgress}%`,
+                        background: currentProgress === 100
+                          ? "linear-gradient(90deg, #10b981, #059669)"
+                          : "linear-gradient(90deg, #6366f1, #4f46e5)",
+                      }}
+                    />
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={currentProgress}
+                    onChange={(e) => setProgressEdit(Number(e.target.value))}
+                    className="w-full h-3 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer absolute inset-0 opacity-0"
+                    style={{ position: "absolute", top: 0, left: 0, opacity: 0, height: "12px" }}
+                  />
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={currentProgress}
+                    onChange={(e) => setProgressEdit(Number(e.target.value))}
+                    className="w-full accent-primary cursor-pointer"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
               </div>
 
               {hasChanges && (
                 <Button onClick={handleUpdate} isLoading={updateMutation.isPending} className="w-full">
-                  <Save className="w-4 h-4 mr-2" /> Save Changes
+                  <Save className="w-4 h-4 mr-2" /> Guardar Cambios
                 </Button>
               )}
             </CardContent>

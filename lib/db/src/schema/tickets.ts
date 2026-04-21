@@ -11,6 +11,7 @@ export const ticketsTable = pgTable("tickets", {
   description: text("description").notNull(),
   status: ticketStatusEnum("status").notNull().default("open"),
   priority: ticketPriorityEnum("priority").notNull().default("medium"),
+  progress: integer("progress").notNull().default(0),
   departmentId: integer("department_id").notNull(),
   createdBy: text("created_by").notNull(),
   assignedTo: text("assigned_to"),
