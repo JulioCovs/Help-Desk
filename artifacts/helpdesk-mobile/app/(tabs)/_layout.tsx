@@ -3,10 +3,13 @@ import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Icon, Label, Badge, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import React from "react";
+import { router } from "expo-router";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AUTH_TOKEN_KEY } from "@/constants/authStorage";
 import Colors from "@/constants/colors";
 
 function NativeTabLayout() {
@@ -124,6 +127,14 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
+  useEffect(() => {
+    void AsyncStorage.getItem(AUTH_TOKEN_KEY).then((t) => {
+      if (!t?.trim()) {
+        router.replace("/login");
+      }
+    });
+  }, []);
+
   if (isLiquidGlassAvailable()) {
     return <NativeTabLayout />;
   }

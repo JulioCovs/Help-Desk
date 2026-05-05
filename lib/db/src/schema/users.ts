@@ -10,6 +10,8 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   role: userRoleEnum("role").notNull().default("employee"),
   departmentId: integer("department_id"),
+  /** bcrypt hash; null until first login or registration sets a password */
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -6,16 +6,16 @@ import {
   StyleSheet,
   Pressable,
   Platform,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useGetStats, useGetTickets } from "@workspace/api-client-react";
+import { useGetStats, useGetTickets, type Ticket } from "@workspace/api-client-react";
 import Colors from "@/constants/colors";
 import { useUser } from "@/context/UserContext";
 import { TicketCard } from "@/components/TicketCard";
+import { asArray } from "@/utils/asArray";
 
 function StatCard({
   label,
@@ -39,9 +39,24 @@ function StatCard({
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useUser();
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useGetStats();
-  const { data: tickets, isLoading: ticketsLoading, refetch: refetchTickets } = useGetTickets({ status: "open" });
-  const isLoading = statsLoading || ticketsLoading;
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isFetching: statsFetching,
+    refetch: refetchStats,
+  } = useGetStats();
+  const {
+    data: tickets,
+    isLoading: ticketsLoading,
+    isFetching: ticketsFetching,
+    refetch: refetchTickets,
+  } = useGetTickets({ status: "open" });
+
+  /** API / caché: nullish y valores no-array → lista vacía */
+  const openTickets: Ticket[] = asArray<Ticket>(tickets);
+  /** Pull-to-refresh: solo cuando ya hay datos y una query está refetching */
+  const isPullRefreshing =
+    (statsFetching || ticketsFetching) && !statsLoading && !ticketsLoading;
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 8;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
@@ -63,8 +78,11 @@ export default function HomeScreen() {
       }}
       refreshControl={
         <RefreshControl
-          refreshing={isLoading}
-          onRefresh={() => { refetchStats(); refetchTickets(); }}
+          refreshing={isPullRefreshing}
+          onRefresh={() => {
+            void refetchStats();
+            void refetchTickets();
+          }}
           tintColor={Colors.light.tint}
         />
       }
@@ -87,7 +105,11 @@ export default function HomeScreen() {
       {/* Stats Grid */}
       <Text style={styles.sectionTitle}>Resumen</Text>
       {statsLoading ? (
-        <ActivityIndicator color={Colors.light.tint} style={{ marginVertical: 24 }} />
+        <View style={styles.statsGrid}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={[styles.statCard, styles.skeletonStat]} />
+          ))}
+        </View>
       ) : stats ? (
         <View style={styles.statsGrid}>
           <StatCard label="Abiertos" value={stats.openTickets} color={Colors.light.statusOpen} icon="circle" />
@@ -106,15 +128,19 @@ export default function HomeScreen() {
       </View>
 
       {ticketsLoading ? (
-        <ActivityIndicator color={Colors.light.tint} style={{ marginVertical: 24 }} />
-      ) : !tickets || tickets.length === 0 ? (
+        <View style={styles.ticketSkeletonList}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.ticketSkeleton} />
+          ))}
+        </View>
+      ) : openTickets.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="inbox" size={40} color={Colors.light.textTertiary} />
           <Text style={styles.emptyTitle}>Sin tickets abiertos</Text>
           <Text style={styles.emptyDesc}>¡Todo está al día!</Text>
         </View>
       ) : (
-        tickets.slice(0, 5).map((ticket) => (
+        openTickets.slice(0, 5).map((ticket) => (
           <TicketCard key={ticket.id} ticket={ticket} />
         ))
       )}
@@ -221,5 +247,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textTertiary,
+  },
+  skeletonStat: {
+    minHeight: 88,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderColor: Colors.light.cardBorder,
+    borderWidth: 1,
+    opacity: 0.85,
+  },
+  ticketSkeletonList: {
+    gap: 12,
+    marginBottom: 8,
+  },
+  ticketSkeleton: {
+    height: 96,
+    borderRadius: 12,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
   },
 });

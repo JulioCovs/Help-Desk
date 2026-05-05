@@ -13,12 +13,17 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useGetDepartments, useCreateTicket } from "@workspace/api-client-react";
+import {
+  useGetDepartments,
+  useCreateTicket,
+  type Department,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useUser } from "@/context/UserContext";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
+import { asArray } from "@/utils/asArray";
 
 const PRIORITY_OPTIONS = [
   { label: "Baja", value: "low" as const, color: Colors.light.priorityLow },
@@ -40,6 +45,8 @@ export default function NewTicketScreen() {
 
   const { data: departments, isLoading: deptsLoading } = useGetDepartments();
   const createTicketMutation = useCreateTicket();
+
+  const departmentList = asArray<Department>(departments);
 
   const handleSubmit = async () => {
     if (!title.trim()) return Alert.alert("Error", "El título es obligatorio");
@@ -146,7 +153,7 @@ export default function NewTicketScreen() {
           <ActivityIndicator color={Colors.light.tint} style={{ marginVertical: 12 }} />
         ) : (
           <View style={styles.deptGrid}>
-            {(departments ?? []).map((dept) => (
+            {departmentList.map((dept) => (
               <Pressable
                 key={dept.id}
                 onPress={() => setDepartmentId(dept.id)}

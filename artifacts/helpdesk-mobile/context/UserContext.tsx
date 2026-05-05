@@ -10,6 +10,7 @@ type UserProfile = {
 type UserContextType = {
   user: UserProfile | null;
   setUser: (user: UserProfile) => Promise<void>;
+  clearUser: () => Promise<void>;
   isLoading: boolean;
 };
 
@@ -35,8 +36,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem("userProfile", JSON.stringify(profile));
   };
 
+  const clearUser = async () => {
+    setUserState(null);
+    await AsyncStorage.removeItem("userProfile");
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser, isLoading }}>
+    <UserContext.Provider value={{ user, setUser, clearUser, isLoading }}>
       {children}
     </UserContext.Provider>
   );

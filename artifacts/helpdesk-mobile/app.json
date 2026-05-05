@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HelpDesk",
-    "slug": "helpdesk-mobile",
+    "slug": "help-desk-reports",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -16,7 +16,9 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.juliocova10.workspace"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -31,8 +33,13 @@
       "expo-web-browser"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e2e210fd-81ea-4d88-8b55-52fd6925be8d"
+      }
+    },
+    "owner": "juliocova10"
   }
 }

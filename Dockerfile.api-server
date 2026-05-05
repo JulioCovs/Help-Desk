@@ -1,0 +1,27 @@
+# Imagen del api-server (Express). Contexto de build = raíz del monorepo.
+# Railway: nuevo servicio → conectar repo → Dockerfile path = Dockerfile.api-server (raíz).
+# Variables en Railway (servicio api-server): DATABASE_URL, JWT_SECRET (≥16 chars), PORT es automático.
+#
+# Build local: docker build -f Dockerfile.api-server -t helpdesk-api .
+
+FROM node:20-bookworm-slim AS runner
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Workspace completo (pnpm-workspace.yaml referencia artifacts/*, lib/*, scripts); helpdesk-mobile va en .dockerignore.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY lib ./lib
+COPY scripts ./scripts
+COPY artifacts ./artifacts
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @workspace/api-server run build
+
+ENV NODE_ENV=production
+
+# Railway inyecta PORT; el servidor ya usa process.env.PORT ?? API_PORT
+EXPOSE 3001
+
+CMD ["node", "artifacts/api-server/dist/index.mjs"]

@@ -1,25 +1,32 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Ticket, 
-  Building2, 
-  Users, 
-  Settings,
+import {
+  LayoutDashboard,
+  Ticket,
+  Building2,
+  Users,
   LogOut,
-  HelpCircle
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/auth/AuthContext";
+import type { AppRole } from "@/auth/roles";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/tickets", label: "Tickets", icon: Ticket },
-  { href: "/departments", label: "Departments", icon: Building2 },
-  { href: "/users", label: "Users", icon: Users },
+const ALL_NAV = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "employee"] as AppRole[] },
+  { href: "/tickets", label: "Tickets", icon: Ticket, roles: ["admin", "manager", "employee"] as AppRole[] },
+  { href: "/departments", label: "Departments", icon: Building2, roles: ["admin", "manager"] as AppRole[] },
+  { href: "/users", label: "Users", icon: Users, roles: ["admin"] as AppRole[] },
 ];
 
 export function Sidebar() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const { user, logout } = useAuth();
+
+  const navItems = useMemo(() => {
+    const role = user?.role ?? "employee";
+    return ALL_NAV.filter((item) => item.roles.includes(role));
+  }, [user?.role]);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-sidebar border-r border-sidebar-border hidden lg:flex flex-col">
@@ -36,7 +43,7 @@ export function Sidebar() {
         <div className="px-4 mb-2 text-xs font-semibold text-sidebar-foreground uppercase tracking-wider">
           Menu
         </div>
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href} className={cn(
@@ -52,10 +59,19 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="p-4 border-t border-sidebar-border">
-        <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all duration-200 text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive font-medium text-sm group">
+      <div className="p-4 border-t border-sidebar-border space-y-2">
+        {user ? (
+          <p className="px-4 text-xs text-muted-foreground truncate" title={user.email}>
+            {user.name}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void logout().then(() => navigate("/login"))}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all duration-200 text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive font-medium text-sm group"
+        >
           <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          Logout
+          Cerrar sesión
         </button>
       </div>
     </aside>

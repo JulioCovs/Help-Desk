@@ -16,6 +16,8 @@ import { router } from "expo-router";
 import { useGetTickets } from "@workspace/api-client-react";
 import Colors from "@/constants/colors";
 import { TicketCard } from "@/components/TicketCard";
+import { asArray } from "@/utils/asArray";
+import type { Ticket } from "@workspace/api-client-react";
 
 const STATUS_FILTERS = [
   { label: "Todos", value: "" },
@@ -32,7 +34,14 @@ export default function TicketsScreen() {
   const params: Record<string, string> = {};
   if (selectedStatus) params.status = selectedStatus;
 
-  const { data: tickets, isLoading, refetch } = useGetTickets(params as Parameters<typeof useGetTickets>[0]);
+  const {
+    data: tickets,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetTickets(params as Parameters<typeof useGetTickets>[0]);
+
+  const ticketList: Ticket[] = asArray<Ticket>(tickets);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 8;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
@@ -83,7 +92,7 @@ export default function TicketsScreen() {
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.light.tint} />
         </View>
-      ) : !tickets || tickets.length === 0 ? (
+      ) : ticketList.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="inbox" size={48} color={Colors.light.textTertiary} />
           <Text style={styles.emptyTitle}>Sin tickets</Text>
@@ -100,7 +109,7 @@ export default function TicketsScreen() {
         </View>
       ) : (
         <FlatList
-          data={tickets}
+          data={ticketList}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <TicketCard ticket={item} />}
           contentContainerStyle={[
@@ -109,8 +118,8 @@ export default function TicketsScreen() {
           ]}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refetch}
+              refreshing={isFetching && !isLoading}
+              onRefresh={() => void refetch()}
               tintColor={Colors.light.tint}
             />
           }

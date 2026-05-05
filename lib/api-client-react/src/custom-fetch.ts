@@ -357,7 +357,16 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const isBrowser =
+    typeof globalThis !== "undefined" &&
+    typeof (globalThis as { document?: unknown }).document !== "undefined";
+
+  const response = await fetch(input, {
+    ...init,
+    method,
+    headers,
+    ...(isBrowser ? { credentials: init.credentials ?? "include" } : {}),
+  });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

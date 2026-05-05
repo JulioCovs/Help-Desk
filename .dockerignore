@@ -1,0 +1,8 @@
+# Contexto Docker api-server (monorepo): excluir solo lo que no participa en el build de pnpm.
+node_modules
+.git
+.expo
+.expo-shared
+**/*.tsbuildinfo
+.pnpm-store
+artifacts/helpdesk-mobile

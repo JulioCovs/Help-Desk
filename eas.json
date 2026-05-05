@@ -1,0 +1,22 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "node": "20.18.0",
+      "developmentClient": false,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {}
+    },
+    "production": {
+      "node": "20.18.0",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {}
+    }
+  }
+}

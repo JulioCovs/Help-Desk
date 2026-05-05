@@ -19,11 +19,13 @@ import {
   useGetTicketComments,
   useCreateComment,
   useUpdateTicket,
+  type Comment,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useUser } from "@/context/UserContext";
+import { asArray } from "@/utils/asArray";
 
 const STATUS_OPTIONS = [
   { label: "Abierto", value: "open", color: Colors.light.statusOpen, bg: Colors.light.statusOpenBg },
@@ -94,6 +96,8 @@ export default function TicketDetailScreen() {
 
   const { data: ticket, isLoading: ticketLoading } = useGetTicket(ticketId);
   const { data: comments, isLoading: commentsLoading } = useGetTicketComments(ticketId);
+
+  const commentsList = asArray<Comment>(comments);
   const createCommentMutation = useCreateComment();
   const updateTicketMutation = useUpdateTicket();
 
@@ -291,14 +295,14 @@ export default function TicketDetailScreen() {
           {/* Comments */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Comentarios ({comments?.length ?? 0})
+              Comentarios ({commentsList.length})
             </Text>
             {commentsLoading ? (
               <ActivityIndicator color={Colors.light.tint} />
-            ) : !comments || comments.length === 0 ? (
+            ) : commentsList.length === 0 ? (
               <Text style={styles.noComments}>Aún no hay comentarios</Text>
             ) : (
-              comments.map((c) => (
+              commentsList.map((c) => (
                 <CommentBubble
                   key={c.id}
                   comment={c}

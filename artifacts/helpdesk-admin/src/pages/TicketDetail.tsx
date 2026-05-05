@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useParams } from "wouter";
+import { useAuth } from "@/auth/AuthContext";
 import { 
   useGetTicket, 
   useGetTicketComments, 
@@ -20,6 +21,8 @@ export default function TicketDetail() {
   const ticketId = parseInt(id || "0");
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const { data: ticket, isLoading: isTicketLoading } = useGetTicket(ticketId);
   const { data: comments, isLoading: isCommentsLoading } = useGetTicketComments(ticketId);
@@ -94,7 +97,11 @@ export default function TicketDetail() {
     try {
       await commentMutation.mutateAsync({
         id: ticketId,
-        data: { content: commentText, authorName: "Admin", isInternal }
+        data: {
+          content: commentText,
+          authorName: user?.name ?? "Usuario",
+          isInternal: isAdmin ? isInternal : false,
+        },
       });
       setCommentText("");
       setIsInternal(false);
@@ -128,9 +135,11 @@ export default function TicketDetail() {
                   </div>
                   <CardTitle className="text-2xl">{ticket.title}</CardTitle>
                 </div>
-                <Button variant="destructive" size="sm" onClick={handleDelete} className="opacity-50 hover:opacity-100">
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
-                </Button>
+                {isAdmin ? (
+                  <Button variant="destructive" size="sm" onClick={handleDelete} className="opacity-50 hover:opacity-100">
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </Button>
+                ) : null}
               </div>
             </CardHeader>
             <CardContent className="p-8">
@@ -183,17 +192,23 @@ export default function TicketDetail() {
                     className="w-full min-h-[120px] p-4 rounded-xl border-2 border-border bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all resize-y mb-4 text-sm"
                   />
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        checked={isInternal}
-                        onChange={(e) => setIsInternal(e.target.checked)}
-                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 transition-all"
-                      />
-                      <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Internal note (hidden from customer)</span>
-                    </label>
+                    {isAdmin ? (
+                      <label className="flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={isInternal}
+                          onChange={(e) => setIsInternal(e.target.checked)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20 transition-all"
+                        />
+                        <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                          Nota interna
+                        </span>
+                      </label>
+                    ) : (
+                      <span />
+                    )}
                     <Button type="submit" isLoading={commentMutation.isPending} disabled={!commentText.trim()}>
-                      Send Reply
+                      Enviar
                     </Button>
                   </div>
                 </form>

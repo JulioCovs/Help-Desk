@@ -5,26 +5,43 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { setBaseUrl } from "@workspace/api-client-react";
+import { setAuthTokenGetter, setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AUTH_TOKEN_KEY } from "@/constants/authStorage";
 import { UserProvider } from "@/context/UserContext";
+import { resolveApiBaseUrl } from "@/lib/resolveApiBaseUrl";
 
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+function syncApiBaseUrl(): void {
+  setBaseUrl(resolveApiBaseUrl());
+}
 
 SplashScreen.preventAutoHideAsync();
+
+setAuthTokenGetter(async () => {
+  try {
+    return await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+});
+
+syncApiBaseUrl();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Atrás" }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: true, title: "Iniciar sesión" }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="ticket/[id]" options={{ presentation: "card", headerShown: true, title: "" }} />
       <Stack.Screen name="new-ticket" options={{ presentation: "modal", headerShown: true, title: "Nuevo Ticket" }} />
@@ -52,7 +69,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
+          <GestureHandlerRootView style={{ flex: 1 }}>
             <UserProvider>
               <RootLayoutNav />
             </UserProvider>

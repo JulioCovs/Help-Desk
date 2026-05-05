@@ -9,10 +9,13 @@ export default function Users() {
   const { data: users, isLoading } = useGetUsers();
 
   const getRoleBadge = (role: string) => {
-    switch(role) {
-      case 'admin': return <Badge variant="error">Admin</Badge>;
-      case 'manager': return <Badge variant="warning">Manager</Badge>;
-      default: return <Badge variant="default">Employee</Badge>;
+    switch (role) {
+      case "admin":
+        return <Badge variant="destructive">Admin</Badge>;
+      case "manager":
+        return <Badge variant="secondary">Manager</Badge>;
+      default:
+        return <Badge variant="default">Employee</Badge>;
     }
   };
 

@@ -1,0 +1,11 @@
+# Railway: Config as Code — crear servicio desde este repo y asociar al Dockerfile del API.
+# https://docs.railway.app/deploy/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.api-server"
+
+[deploy]
+healthcheckPath = "/api/healthz"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"

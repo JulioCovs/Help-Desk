@@ -62,6 +62,8 @@ export interface Ticket {
   commentCount: number;
   createdAt: string;
   updatedAt: string;
+  /** 0–100 repair progress when provided by the API */
+  progress?: number;
 }
 
 export type CreateTicketInputPriority =

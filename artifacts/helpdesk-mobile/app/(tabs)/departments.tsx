@@ -14,6 +14,7 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useGetDepartments } from "@workspace/api-client-react";
 import Colors from "@/constants/colors";
+import { asArray } from "@/utils/asArray";
 
 type Department = {
   id: number;
@@ -77,7 +78,13 @@ function DeptCard({ dept }: { dept: Department }) {
 
 export default function DepartmentsScreen() {
   const insets = useSafeAreaInsets();
-  const { data: departments, isLoading, refetch } = useGetDepartments();
+  const {
+    data: departments,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetDepartments();
+  const departmentList = asArray<Department>(departments);
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 8;
 
   return (
@@ -88,7 +95,7 @@ export default function DepartmentsScreen() {
         <View style={styles.centered}>
           <ActivityIndicator color={Colors.light.tint} />
         </View>
-      ) : !departments || departments.length === 0 ? (
+      ) : departmentList.length === 0 ? (
         <View style={styles.emptyState}>
           <Feather name="grid" size={48} color={Colors.light.textTertiary} />
           <Text style={styles.emptyTitle}>Sin departamentos</Text>
@@ -96,7 +103,7 @@ export default function DepartmentsScreen() {
         </View>
       ) : (
         <FlatList
-          data={departments}
+          data={departmentList}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => <DeptCard dept={item} />}
           contentContainerStyle={[
@@ -105,8 +112,8 @@ export default function DepartmentsScreen() {
           ]}
           refreshControl={
             <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refetch}
+              refreshing={isFetching && !isLoading}
+              onRefresh={() => void refetch()}
               tintColor={Colors.light.tint}
             />
           }

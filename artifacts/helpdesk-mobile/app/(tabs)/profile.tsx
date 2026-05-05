@@ -7,14 +7,19 @@ import {
   Pressable,
   Platform,
   Alert,
-  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useGetTickets } from "@workspace/api-client-react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetTickets, type Ticket } from "@workspace/api-client-react";
 import { useUser } from "@/context/UserContext";
+import { AUTH_TOKEN_KEY } from "@/constants/authStorage";
 import Colors from "@/constants/colors";
+import { asArray } from "@/utils/asArray";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 const ROLE_OPTIONS = [
@@ -45,16 +50,19 @@ function Avatar({ name, size = 72 }: { name: string; size?: number }) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, setUser } = useUser();
+  const queryClient = useQueryClient();
+  const { user, setUser, clearUser } = useUser();
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [role, setRole] = useState<"employee" | "manager" | "admin">(user?.role ?? "employee");
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data: myTickets } = useGetTickets(
-    user?.name ? { createdBy: user.name } : {}
+  const { data: myTickets, isLoading: myTicketsLoading } = useGetTickets(
+    user?.name ? { createdBy: user.name } : {},
   );
+
+  const myTicketsList: Ticket[] = asArray(myTickets);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 8;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
@@ -74,8 +82,15 @@ export default function ProfileScreen() {
     }
   };
 
-  const openTickets = myTickets?.filter((t) => t.status === "open").length ?? 0;
-  const totalTickets = myTickets?.length ?? 0;
+  const openTickets = myTicketsList.filter((t) => t.status === "open").length;
+  const totalTickets = myTicketsList.length;
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await clearUser();
+    queryClient.clear();
+    router.replace("/login");
+  };
 
   return (
     <KeyboardAwareScrollViewCompat
@@ -99,12 +114,20 @@ export default function ProfileScreen() {
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
-          <Text style={styles.statNum}>{totalTickets}</Text>
+          {myTicketsLoading ? (
+            <ActivityIndicator color={Colors.light.tint} style={{ marginVertical: 4 }} />
+          ) : (
+            <Text style={styles.statNum}>{totalTickets}</Text>
+          )}
           <Text style={styles.statLbl}>Tickets totales</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={[styles.statNum, { color: Colors.light.statusOpen }]}>{openTickets}</Text>
+          {myTicketsLoading ? (
+            <ActivityIndicator color={Colors.light.statusOpen} style={{ marginVertical: 4 }} />
+          ) : (
+            <Text style={[styles.statNum, { color: Colors.light.statusOpen }]}>{openTickets}</Text>
+          )}
           <Text style={styles.statLbl}>Abiertos</Text>
         </View>
       </View>
@@ -120,7 +143,6 @@ export default function ProfileScreen() {
           style={styles.input}
           placeholder="Tu nombre"
           placeholderTextColor={Colors.light.textTertiary}
-          fontFamily="Inter_400Regular"
           autoCapitalize="words"
           returnKeyType="next"
         />
@@ -172,6 +194,14 @@ export default function ProfileScreen() {
       >
         <Feather name="check" size={18} color="#fff" />
         <Text style={styles.saveBtnText}>{isSaving ? "Guardando..." : "Guardar Perfil"}</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => void handleLogout()}
+        style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
+      >
+        <Feather name="log-out" size={18} color={Colors.light.textSecondary} />
+        <Text style={styles.logoutBtnText}>Cerrar sesión</Text>
       </Pressable>
     </KeyboardAwareScrollViewCompat>
   );
@@ -260,6 +290,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    fontFamily: "Inter_400Regular",
     color: Colors.light.text,
   },
   roleRow: {
@@ -301,5 +332,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
+  },
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    backgroundColor: Colors.light.card,
+  },
+  logoutBtnText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
   },
 });
