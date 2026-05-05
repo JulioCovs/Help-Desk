@@ -11,7 +11,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 
 # Workspace completo (pnpm-workspace.yaml referencia artifacts/*, lib/*, scripts); helpdesk-mobile va en .dockerignore.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml ./
 COPY lib ./lib
 COPY scripts ./scripts
 COPY artifacts ./artifacts
