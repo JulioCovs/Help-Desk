@@ -11,11 +11,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useGetStats, useGetTickets, type Ticket } from "@workspace/api-client-react";
+import {
+  useGetStats,
+  useGetTickets,
+  type Stats,
+  type Ticket,
+} from "@workspace/api-client-react";
 import Colors from "@/constants/colors";
 import { useUser } from "@/context/UserContext";
 import { TicketCard } from "@/components/TicketCard";
 import { asArray } from "@/utils/asArray";
+
+type FeatherIconName = React.ComponentProps<typeof Feather>["name"];
 
 function StatCard({
   label,
@@ -26,14 +33,63 @@ function StatCard({
   label: string;
   value: number;
   color: string;
-  icon: string;
+  icon: FeatherIconName;
 }) {
   return (
     <View style={[styles.statCard, { borderTopColor: color, borderTopWidth: 3 }]}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.statCardRow}>
+        <View style={styles.statTextCol}>
+          <Text style={styles.statLabel}>{label}</Text>
+          <Text style={[styles.statValue, { color }]}>{value}</Text>
+        </View>
+        <View style={[styles.statIconBadge, { backgroundColor: color }]}>
+          <Feather name={icon} size={22} color="#fff" />
+        </View>
+      </View>
     </View>
   );
+}
+
+/** Respuesta por defecto: la UI siempre muestra 4 tarjetas con estilo completo (incluso en carga/error). */
+const EMPTY_STATS: Stats = {
+  totalTickets: 0,
+  openTickets: 0,
+  inProgressTickets: 0,
+  resolvedTickets: 0,
+  closedTickets: 0,
+  urgentTickets: 0,
+  totalDepartments: 0,
+  totalUsers: 0,
+};
+
+/** Misma métrica base que el panel admin web (Overview): total + pipeline por estado. */
+function statsSummary(stats: Stats) {
+  return [
+    {
+      label: "Total",
+      value: stats.totalTickets,
+      color: Colors.light.tint,
+      icon: "inbox" as const,
+    },
+    {
+      label: "Abiertos",
+      value: stats.openTickets,
+      color: Colors.light.statusOpen,
+      icon: "alert-circle" as const,
+    },
+    {
+      label: "En Proceso",
+      value: stats.inProgressTickets,
+      color: Colors.light.statusInProgress,
+      icon: "clock" as const,
+    },
+    {
+      label: "Resueltos",
+      value: stats.resolvedTickets,
+      color: Colors.light.statusResolved,
+      icon: "check-circle" as const,
+    },
+  ];
 }
 
 export default function HomeScreen() {
@@ -44,7 +100,12 @@ export default function HomeScreen() {
     isLoading: statsLoading,
     isFetching: statsFetching,
     refetch: refetchStats,
-  } = useGetStats();
+    isError: statsError,
+  } = useGetStats({
+    query: {
+      queryKey: ["/api/stats", user?.email ?? ""],
+    },
+  });
   const {
     data: tickets,
     isLoading: ticketsLoading,
@@ -59,7 +120,6 @@ export default function HomeScreen() {
     (statsFetching || ticketsFetching) && !statsLoading && !ticketsLoading;
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top + 8;
-  const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -67,6 +127,8 @@ export default function HomeScreen() {
     if (hour < 18) return "Buenas tardes";
     return "Buenas noches";
   };
+
+  const displayStats = stats ?? EMPTY_STATS;
 
   return (
     <ScrollView
@@ -102,48 +164,54 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — mismo layout para todos los roles (empleado, supervisor, admin). */}
       <Text style={styles.sectionTitle}>Resumen</Text>
-      {statsLoading ? (
-        <View style={styles.statsGrid}>
-          {[0, 1, 2, 3].map((i) => (
-            <View key={i} style={[styles.statCard, styles.skeletonStat]} />
-          ))}
-        </View>
-      ) : stats ? (
-        <View style={styles.statsGrid}>
-          <StatCard label="Abiertos" value={stats.openTickets} color={Colors.light.statusOpen} icon="circle" />
-          <StatCard label="En Proceso" value={stats.inProgressTickets} color={Colors.light.statusInProgress} icon="clock" />
-          <StatCard label="Resueltos" value={stats.resolvedTickets} color={Colors.light.statusResolved} icon="check-circle" />
-          <StatCard label="Urgentes" value={stats.urgentTickets} color={Colors.light.priorityUrgent} icon="alert-circle" />
-        </View>
+      {statsError ? (
+        <Text style={styles.statsError}>
+          No se pudo cargar el resumen. Tira hacia abajo para reintentar.
+        </Text>
       ) : null}
-
-      {/* Recent Open Tickets */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Tickets Abiertos</Text>
-        <Pressable onPress={() => router.push("/(tabs)/tickets")} hitSlop={8}>
-          <Text style={styles.seeAll}>Ver todos</Text>
-        </Pressable>
+      <View style={[styles.statsGrid, statsLoading && styles.statsGridLoading]}>
+        {statsSummary(displayStats).map((row) => (
+          <StatCard
+            key={row.label}
+            label={row.label}
+            value={row.value}
+            color={row.color}
+            icon={row.icon}
+          />
+        ))}
       </View>
 
-      {ticketsLoading ? (
-        <View style={styles.ticketSkeletonList}>
-          {[0, 1, 2].map((i) => (
-            <View key={i} style={styles.ticketSkeleton} />
-          ))}
+      {/* Recent Open Tickets */}
+      <View style={styles.ticketsPanel}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitleFlat}>Tickets Abiertos</Text>
+          <Pressable onPress={() => router.push("/(tabs)/tickets")} hitSlop={8}>
+            <Text style={styles.seeAll}>Ver todos</Text>
+          </Pressable>
         </View>
-      ) : openTickets.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Feather name="inbox" size={40} color={Colors.light.textTertiary} />
-          <Text style={styles.emptyTitle}>Sin tickets abiertos</Text>
-          <Text style={styles.emptyDesc}>¡Todo está al día!</Text>
-        </View>
-      ) : (
-        openTickets.slice(0, 5).map((ticket) => (
-          <TicketCard key={ticket.id} ticket={ticket} />
-        ))
-      )}
+
+        {ticketsLoading ? (
+          <View style={styles.ticketSkeletonList}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={styles.ticketSkeleton} />
+            ))}
+          </View>
+        ) : openTickets.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="inbox" size={40} color={Colors.light.textTertiary} />
+            <Text style={styles.emptyTitle}>Sin tickets abiertos</Text>
+            <Text style={styles.emptyDesc}>¡Todo está al día!</Text>
+          </View>
+        ) : (
+          <View style={styles.ticketCardStack}>
+            {openTickets.slice(0, 5).map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} />
+            ))}
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -188,7 +256,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
-    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 17,
@@ -196,17 +263,50 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 12,
   },
+  sectionTitleFlat: {
+    fontSize: 17,
+    fontFamily: "Inter_700Bold",
+    color: Colors.light.text,
+    marginBottom: 0,
+  },
   seeAll: {
     fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: Colors.light.tint,
+  },
+  statsError: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.priorityHigh,
     marginBottom: 12,
+  },
+  ticketsPanel: {
+    backgroundColor: Colors.light.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 8,
+    marginTop: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  ticketCardStack: {
+    gap: 10,
+    paddingBottom: 6,
   },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
     marginBottom: 24,
+  },
+  statsGridLoading: {
+    opacity: 0.65,
   },
   statCard: {
     flex: 1,
@@ -222,10 +322,32 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  statCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  statTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  statIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   statValue: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: "Inter_700Bold",
-    marginBottom: 2,
+    marginTop: 4,
   },
   statLabel: {
     fontSize: 12,
@@ -247,13 +369,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textTertiary,
-  },
-  skeletonStat: {
-    minHeight: 88,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderColor: Colors.light.cardBorder,
-    borderWidth: 1,
-    opacity: 0.85,
   },
   ticketSkeletonList: {
     gap: 12,

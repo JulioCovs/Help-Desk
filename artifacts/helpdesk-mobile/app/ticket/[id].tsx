@@ -131,15 +131,37 @@ export default function TicketDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["getTicket", ticketId] });
       queryClient.invalidateQueries({ queryKey: ["getTickets"] });
       queryClient.invalidateQueries({ queryKey: ["getStats"] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[handleStatusChange] error:", err);
       const msg =
-        err?.message ||
-        err?.errorData?.message ||
+        (err as { message?: string })?.message ||
+        (err as { errorData?: { message?: string } })?.errorData?.message ||
         (typeof err === "string" ? err : "No se pudo actualizar el estado");
       Alert.alert("Error", msg);
     }
   };
+
+  const handleProgressChange = async (pct: number) => {
+    if (!ticket) return;
+    try {
+      await updateTicketMutation.mutateAsync({
+        id: ticketId,
+        data: { progress: pct },
+      });
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      queryClient.invalidateQueries({ queryKey: ["getTicket", ticketId] });
+      queryClient.invalidateQueries({ queryKey: ["getTickets"] });
+      queryClient.invalidateQueries({ queryKey: ["getStats"] });
+    } catch (err: unknown) {
+      const msg =
+        (err as { message?: string })?.message ||
+        (typeof err === "string" ? err : "No se pudo actualizar el progreso");
+      Alert.alert("Error", msg);
+    }
+  };
+
+  const canManageTicket =
+    user != null && (user.role === "admin" || user.role === "manager");
 
   if (ticketLoading) {
     return (
@@ -251,10 +273,72 @@ export default function TicketDetailScreen() {
               <Text style={styles.progressLabelText}>50%</Text>
               <Text style={styles.progressLabelText}>100%</Text>
             </View>
+
+            {canManageTicket ? (
+              <>
+                <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Actualizar progreso</Text>
+                <View style={styles.pctChipRow}>
+                  {[0, 25, 50, 75, 100].map((pct) => {
+                    const active = (ticket.progress ?? 0) === pct;
+                    return (
+                      <Pressable
+                        key={pct}
+                        onPress={() => void handleProgressChange(pct)}
+                        disabled={updateTicketMutation.isPending}
+                        style={({ pressed }) => [
+                          styles.pctChip,
+                          active && styles.pctChipActive,
+                          pressed && { opacity: 0.85 },
+                          updateTicketMutation.isPending && { opacity: 0.5 },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.pctChipText, active && styles.pctChipTextActive]}
+                        >
+                          {pct}%
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text style={[styles.sectionTitle, { marginTop: 18 }]}>Cambiar estado</Text>
+                <View style={styles.statusRow}>
+                  {STATUS_OPTIONS.map((s) => {
+                    const active = ticket.status === s.value;
+                    return (
+                      <Pressable
+                        key={s.value}
+                        onPress={() => void handleStatusChange(s.value)}
+                        disabled={updateTicketMutation.isPending}
+                        style={({ pressed }) => [
+                          styles.statusChip,
+                          {
+                            backgroundColor: active ? s.bg : Colors.light.backgroundSecondary,
+                            borderColor: active ? s.color : Colors.light.cardBorder,
+                          },
+                          pressed && { opacity: 0.88 },
+                          updateTicketMutation.isPending && { opacity: 0.55 },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusChipText,
+                            { color: active ? s.color : Colors.light.textSecondary },
+                          ]}
+                        >
+                          {s.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
           </View>
 
-          {/* Visto Bueno or Status Info */}
-          {ticket.status === "resolved" ? (
+          {/* Visto Bueno or Status Info — solo flujo empleado */}
+          {ticket.status === "resolved" && user?.role === "employee" ? (
             <View style={styles.vistoBuenoSection}>
               <Feather name="check-circle" size={28} color={Colors.light.statusResolved} />
               <Text style={styles.vistoBuenoTitle}>¡La reparación está lista!</Text>
@@ -462,6 +546,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     color: Colors.light.textTertiary,
+  },
+  pctChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  pctChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.light.cardBorder,
+  },
+  pctChipActive: {
+    backgroundColor: Colors.light.tint + "18",
+    borderColor: Colors.light.tint,
+  },
+  pctChipText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.textSecondary,
+  },
+  pctChipTextActive: {
+    color: Colors.light.tint,
   },
   vistoBuenoSection: {
     backgroundColor: Colors.light.statusResolvedBg,
