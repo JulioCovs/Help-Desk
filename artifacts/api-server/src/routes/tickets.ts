@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, ticketsTable, departmentsTable, commentsTable, type Ticket } from "@workspace/db";
-import { eq, sql, and } from "drizzle-orm";
+import { db, ticketsTable, departmentsTable, commentsTable, usersTable, type Ticket } from "@workspace/db";
+import { eq, sql, and, or } from "drizzle-orm";
 import { requireAuth } from "../auth/middleware";
 import { canAccessTicket } from "../auth/access";
+import { normalizeEmail } from "../lib/email-normalize";
 
 const router: IRouter = Router();
 
@@ -16,7 +17,13 @@ router.get("/tickets", async (req, res) => {
     const conditions = [];
 
     if (user.role === "employee") {
-      conditions.push(eq(ticketsTable.createdBy, user.name));
+      const emailNorm = normalizeEmail(user.email);
+      conditions.push(
+        or(
+          eq(ticketsTable.createdByUserId, user.id),
+          sql`lower(trim(coalesce(${ticketsTable.createdByEmail}, ''))) = ${emailNorm}`,
+        ),
+      );
     } else if (user.role === "manager" && user.departmentId != null) {
       conditions.push(eq(ticketsTable.departmentId, user.departmentId));
     }
@@ -46,6 +53,8 @@ router.get("/tickets", async (req, res) => {
         departmentId: ticketsTable.departmentId,
         departmentName: departmentsTable.name,
         createdBy: ticketsTable.createdBy,
+        createdByUserId: ticketsTable.createdByUserId,
+        createdByEmail: ticketsTable.createdByEmail,
         assignedTo: ticketsTable.assignedTo,
         createdAt: ticketsTable.createdAt,
         updatedAt: ticketsTable.updatedAt,
@@ -76,14 +85,33 @@ router.post("/tickets", async (req, res) => {
       return;
     }
 
-    const author =
-      user.role === "admin" && typeof createdBy === "string" && createdBy.trim()
-        ? createdBy.trim()
-        : user.name;
+    let author = user.name;
+    let createdByUserId: number | null = user.id;
+    let createdByEmail = normalizeEmail(user.email);
+
+    if (user.role === "admin" && typeof createdBy === "string" && createdBy.trim()) {
+      const raw = createdBy.trim();
+      const [target] = await db
+        .select()
+        .from(usersTable)
+        .where(sql`lower(trim(${usersTable.name})) = lower(trim(${raw}))`);
+      author = target?.name ?? raw;
+      createdByUserId = target?.id ?? null;
+      createdByEmail = target ? normalizeEmail(target.email) : normalizeEmail(user.email);
+    }
 
     const [ticket] = await db
       .insert(ticketsTable)
-      .values({ title, description, priority, departmentId, createdBy: author, status: "open" })
+      .values({
+        title,
+        description,
+        priority,
+        departmentId,
+        createdBy: author,
+        createdByUserId,
+        createdByEmail,
+        status: "open",
+      })
       .returning();
 
     const [dept] = await db.select().from(departmentsTable).where(eq(departmentsTable.id, ticket.departmentId));
@@ -111,6 +139,8 @@ router.get("/tickets/:id", async (req, res) => {
         departmentId: ticketsTable.departmentId,
         departmentName: departmentsTable.name,
         createdBy: ticketsTable.createdBy,
+        createdByUserId: ticketsTable.createdByUserId,
+        createdByEmail: ticketsTable.createdByEmail,
         assignedTo: ticketsTable.assignedTo,
         createdAt: ticketsTable.createdAt,
         updatedAt: ticketsTable.updatedAt,
@@ -148,6 +178,8 @@ router.patch("/tickets/:id", async (req, res) => {
         id: ticketsTable.id,
         departmentId: ticketsTable.departmentId,
         createdBy: ticketsTable.createdBy,
+        createdByUserId: ticketsTable.createdByUserId,
+        createdByEmail: ticketsTable.createdByEmail,
       })
       .from(ticketsTable)
       .where(eq(ticketsTable.id, id));

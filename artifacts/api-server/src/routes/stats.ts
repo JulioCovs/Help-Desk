@@ -1,19 +1,34 @@
 import { Router, type IRouter } from "express";
 import { db, ticketsTable, departmentsTable, usersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { requireAuth } from "../auth/middleware";
+import { normalizeEmail } from "../lib/email-normalize";
 
 const router: IRouter = Router();
 
 router.use(requireAuth);
 
+const EMPTY_AGG = {
+  total: 0,
+  open: 0,
+  inProgress: 0,
+  resolved: 0,
+  closed: 0,
+  urgent: 0,
+};
+
 router.get("/stats", async (req, res) => {
   try {
     const user = req.authUser!;
 
+    /** Empleado: por ID de usuario (preferido) o por email del creador (único, estable). */
+    const emailNorm = normalizeEmail(user.email);
     const ticketWhere =
       user.role === "employee"
-        ? eq(ticketsTable.createdBy, user.name)
+        ? or(
+            eq(ticketsTable.createdByUserId, user.id),
+            sql`lower(trim(coalesce(${ticketsTable.createdByEmail}, ''))) = ${emailNorm}`,
+          )
         : user.role === "manager" && user.departmentId != null
           ? eq(ticketsTable.departmentId, user.departmentId)
           : undefined;
@@ -29,9 +44,8 @@ router.get("/stats", async (req, res) => {
       })
       .from(ticketsTable);
 
-    const [ticketStats] = ticketWhere
-      ? await ticketQuery.where(ticketWhere)
-      : await ticketQuery;
+    const rows = ticketWhere ? await ticketQuery.where(ticketWhere) : await ticketQuery;
+    const ticketStats = { ...EMPTY_AGG, ...rows[0] };
 
     if (user.role === "admin") {
       const [{ deptCount }] = await db

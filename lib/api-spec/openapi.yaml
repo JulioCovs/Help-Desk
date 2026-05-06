@@ -367,8 +367,16 @@ components:
           type: string
         createdBy:
           type: string
+        createdByUserId:
+          type: integer
+        createdByEmail:
+          type: string
         assignedTo:
           type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
         commentCount:
           type: integer
         createdAt:
@@ -425,6 +433,10 @@ components:
           enum: [low, medium, high, urgent]
         assignedTo:
           type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
 
     Comment:
       type: object
