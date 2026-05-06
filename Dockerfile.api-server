@@ -24,7 +24,7 @@ RUN pnpm --filter @workspace/api-server run build
 
 ENV NODE_ENV=production
 
-# Railway gestiona el puerto automáticamente
+# Railway inyecta PORT; localmente puedes usar API_PORT o PORT (por defecto 3001 en index.ts). EXPOSE documenta el puerto habitual del servicio.
 EXPOSE 3001
 
 CMD ["node", "artifacts/api-server/dist/index.mjs"]

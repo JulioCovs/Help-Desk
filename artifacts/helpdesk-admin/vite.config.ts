@@ -16,7 +16,10 @@ export default defineConfig(async ({ mode }) => {
 
   const basePath = env.BASE_PATH ?? process.env.BASE_PATH ?? "/";
   const apiProxyTarget =
-    env.VITE_API_PROXY_TARGET ?? process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:3001";
+    env.VITE_API_PROXY_TARGET ??
+    process.env.VITE_API_PROXY_TARGET ??
+    "https://help-desk-production-c1fd.up.railway.app";
+  const proxySecure = apiProxyTarget.startsWith("https:");
 
   return {
   envDir: repoRoot,
@@ -59,7 +62,7 @@ export default defineConfig(async ({ mode }) => {
       "/api": {
         target: apiProxyTarget,
         changeOrigin: true,
-        secure: false,
+        secure: proxySecure,
       },
     },
     fs: {

@@ -1,6 +1,8 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
-import { Platform } from "react-native";
+
+/** URL del api-server en producción (Railway); fallback en __DEV__ si falta EXPO_PUBLIC_API_URL */
+const PRODUCTION_API_BASE_URL = "https://help-desk-production-c1fd.up.railway.app";
 
 /** Evita usar URLs plantilla de eas.json que rompen el fetch con "Network request failed" */
 const PLACEHOLDER_SNIPPETS = ["your_api_service", "your-api-service", "xxxx.up.railway", "tu-proyecto"];
@@ -21,7 +23,7 @@ function pickFirstValid(...candidates: Array<string | undefined | null>): string
 /**
  * Origen del API HTTP (sin barra final).
  * Prioridad: EXPO_PUBLIC_API_URL → extra.apiUrl (build) → EXPO_PUBLIC_DOMAIN.
- * En __DEV__: solo simulador/emulador/web usa localhost; dispositivo físico exige EXPO_PUBLIC_API_URL (HTTPS Railway o LAN).
+ * En __DEV__: si no hay EXPO_PUBLIC_API_URL, se usa el mismo origen HTTPS que producción (Railway).
  */
 export function resolveApiBaseUrl(): string | null {
   const fromEnv = pickFirstValid(process.env.EXPO_PUBLIC_API_URL);
@@ -41,13 +43,7 @@ export function resolveApiBaseUrl(): string | null {
     if (Device.isDevice) {
       return null;
     }
-    if (Platform.OS === "web") {
-      return "http://127.0.0.1:3001";
-    }
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:3001";
-    }
-    return "http://127.0.0.1:3001";
+    return PRODUCTION_API_BASE_URL;
   }
 
   return null;
