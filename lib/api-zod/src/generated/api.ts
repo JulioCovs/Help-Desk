@@ -91,8 +91,6 @@ export const GetTicketsResponseItem = zod.object({
   "departmentId": zod.number(),
   "departmentName": zod.string().optional(),
   "createdBy": zod.string(),
-  "createdByUserId": zod.number().optional(),
-  "createdByEmail": zod.string().optional(),
   "assignedTo": zod.string().optional(),
   "progress": zod.number().min(getTicketsResponseProgressMin).max(getTicketsResponseProgressMax).optional(),
   "commentCount": zod.number(),
@@ -110,7 +108,7 @@ export const CreateTicketBody = zod.object({
   "description": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high', 'urgent']),
   "departmentId": zod.number(),
-  "createdBy": zod.string().optional().describe('Opcional. Solo admin puede indicar nombre de otro usuario; empleado\/supervisor: el servidor usa siempre req.authUser (nombre y email del JWT).')
+  "createdBy": zod.string().optional().describe('Opcional. Solo administradores pueden indicar el nombre de otro usuario como creador; en el resto de roles el servidor usa siempre el nombre del usuario autenticado.')
 })
 
 
@@ -135,8 +133,6 @@ export const GetTicketResponse = zod.object({
   "departmentId": zod.number(),
   "departmentName": zod.string().optional(),
   "createdBy": zod.string(),
-  "createdByUserId": zod.number().optional(),
-  "createdByEmail": zod.string().optional(),
   "assignedTo": zod.string().optional(),
   "progress": zod.number().min(getTicketResponseProgressMin).max(getTicketResponseProgressMax).optional(),
   "commentCount": zod.number(),
@@ -180,8 +176,6 @@ export const UpdateTicketResponse = zod.object({
   "departmentId": zod.number(),
   "departmentName": zod.string().optional(),
   "createdBy": zod.string(),
-  "createdByUserId": zod.number().optional(),
-  "createdByEmail": zod.string().optional(),
   "assignedTo": zod.string().optional(),
   "progress": zod.number().min(updateTicketResponseProgressMin).max(updateTicketResponseProgressMax).optional(),
   "commentCount": zod.number(),

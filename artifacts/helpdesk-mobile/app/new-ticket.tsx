@@ -68,6 +68,7 @@ export default function NewTicketScreen() {
         description: description.trim(),
         priority,
         departmentId: deptId,
+        createdBy: user.name.trim(),
       };
 
       await createTicketMutation.mutateAsync({ data });

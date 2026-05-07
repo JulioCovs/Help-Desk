@@ -367,10 +367,6 @@ components:
           type: string
         createdBy:
           type: string
-        createdByUserId:
-          type: integer
-        createdByEmail:
-          type: string
         assignedTo:
           type: string
         progress:
@@ -412,8 +408,8 @@ components:
         createdBy:
           type: string
           description: >-
-            Opcional. Solo admin puede indicar nombre de otro usuario;
-            empleado/supervisor: el servidor usa siempre req.authUser (nombre y email del JWT).
+            Opcional. Solo administradores pueden indicar el nombre de otro usuario como creador;
+            en el resto de roles el servidor usa siempre el nombre del usuario autenticado.
       required:
         - title
         - description

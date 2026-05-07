@@ -59,8 +59,6 @@ export interface Ticket {
   departmentId: number;
   departmentName?: string;
   createdBy: string;
-  createdByUserId?: number;
-  createdByEmail?: string;
   assignedTo?: string;
   /**
      * @minimum 0
@@ -87,7 +85,7 @@ export interface CreateTicketInput {
   description: string;
   priority: CreateTicketInputPriority;
   departmentId: number;
-  /** Opcional. Solo admin puede indicar nombre de otro usuario; empleado/supervisor: el servidor usa siempre req.authUser (nombre y email del JWT). */
+  /** Opcional. Solo administradores pueden indicar el nombre de otro usuario como creador; en el resto de roles el servidor usa siempre el nombre del usuario autenticado. */
   createdBy?: string;
 }
 

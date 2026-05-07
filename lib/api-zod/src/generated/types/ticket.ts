@@ -17,8 +17,6 @@ export interface Ticket {
   departmentId: number;
   departmentName?: string;
   createdBy: string;
-  createdByUserId?: number;
-  createdByEmail?: string;
   assignedTo?: string;
   /**
      * @minimum 0

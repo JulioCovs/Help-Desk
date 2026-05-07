@@ -1,8 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, ticketsTable, departmentsTable, usersTable } from "@workspace/db";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { requireAuth } from "../auth/middleware";
-import { normalizeEmail } from "../lib/email-normalize";
 
 const router: IRouter = Router();
 
@@ -21,14 +20,10 @@ router.get("/stats", async (req, res) => {
   try {
     const user = req.authUser!;
 
-    /** Solo empleado: agregados de sus tickets (email en sesión). Admin y supervisor: sin filtro (totales globales). */
-    const emailNorm = normalizeEmail(user.email);
+    /** Empleado: stats solo de tickets donde created_by coincide con el nombre en sesión. Admin/supervisor: sin filtro. */
     const ticketWhere =
       user.role === "employee"
-        ? or(
-            eq(ticketsTable.createdByUserId, user.id),
-            sql`lower(trim(coalesce(${ticketsTable.createdByEmail}, ''))) = ${emailNorm}`,
-          )
+        ? sql`lower(trim(${ticketsTable.createdBy})) = ${user.name.trim().toLowerCase()}`
         : undefined;
 
     const ticketSelect = db

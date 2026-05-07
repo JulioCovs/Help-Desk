@@ -17,8 +17,6 @@ router.get("/tickets/:id/comments", async (req, res) => {
         id: ticketsTable.id,
         departmentId: ticketsTable.departmentId,
         createdBy: ticketsTable.createdBy,
-        createdByUserId: ticketsTable.createdByUserId,
-        createdByEmail: ticketsTable.createdByEmail,
       })
       .from(ticketsTable)
       .where(eq(ticketsTable.id, ticketId));
@@ -54,8 +52,6 @@ router.post("/tickets/:id/comments", async (req, res) => {
         id: ticketsTable.id,
         departmentId: ticketsTable.departmentId,
         createdBy: ticketsTable.createdBy,
-        createdByUserId: ticketsTable.createdByUserId,
-        createdByEmail: ticketsTable.createdByEmail,
       })
       .from(ticketsTable)
       .where(eq(ticketsTable.id, ticketId));
