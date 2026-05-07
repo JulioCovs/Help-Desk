@@ -14,7 +14,7 @@ router.use(authRouter);
 router.use(departmentsRouter);
 router.use(ticketsRouter);
 router.use(commentsRouter);
-router.use(usersRouter);
 router.use(statsRouter);
+router.use(usersRouter);
 
 export default router;

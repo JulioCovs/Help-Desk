@@ -6,13 +6,13 @@ import { requireAuth, requireRoles } from "../auth/middleware";
 
 const router: IRouter = Router();
 
-router.use(requireAuth, requireRoles("admin"));
+router.use(requireAuth);
 
 function stripPassword<T extends { passwordHash?: unknown }>(rows: T[]) {
   return rows.map(({ passwordHash: _p, ...rest }) => rest);
 }
 
-router.get("/users", async (req, res) => {
+router.get("/users", requireRoles("admin"), async (req, res) => {
   try {
     const users = await db.select().from(usersTable).orderBy(usersTable.name);
     res.json(stripPassword(users));
@@ -24,7 +24,7 @@ router.get("/users", async (req, res) => {
   }
 });
 
-router.post("/users", async (req, res) => {
+router.post("/users", requireRoles("admin"), async (req, res) => {
   try {
     const { name, email, role, departmentId, password } = req.body;
     if (!name || !email || !role) {
