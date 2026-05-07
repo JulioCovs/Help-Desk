@@ -24,6 +24,10 @@ export const ticketsTable = pgTable("tickets", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertTicketSchema = createInsertSchema(ticketsTable).omit({ id: true, createdAt: true, updatedAt: true });
+/** createdByEmail lo rellena el api-server desde JWT; puede omitirse en inserts parciales. */
+export const insertTicketSchema = createInsertSchema(ticketsTable, {
+  createdByEmail: z.string().trim().optional().nullable(),
+  createdByUserId: z.number().int().positive().optional().nullable(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof ticketsTable.$inferSelect;

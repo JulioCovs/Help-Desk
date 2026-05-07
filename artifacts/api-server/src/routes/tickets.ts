@@ -16,6 +16,7 @@ router.get("/tickets", async (req, res) => {
 
     const conditions = [];
 
+    /** Solo empleados: tickets propios (user id o email del creador). Admin y supervisor ven toda la tabla. */
     if (user.role === "employee") {
       const emailNorm = normalizeEmail(user.email);
       conditions.push(
@@ -24,8 +25,6 @@ router.get("/tickets", async (req, res) => {
           sql`lower(trim(coalesce(${ticketsTable.createdByEmail}, ''))) = ${emailNorm}`,
         ),
       );
-    } else if (user.role === "manager" && user.departmentId != null) {
-      conditions.push(eq(ticketsTable.departmentId, user.departmentId));
     }
 
     if (user.role === "admin" || user.role === "manager") {
@@ -79,15 +78,32 @@ router.get("/tickets", async (req, res) => {
 router.post("/tickets", async (req, res) => {
   try {
     const user = req.authUser!;
-    const { title, description, priority, departmentId, createdBy } = req.body;
+    const { title, description, priority, departmentId, createdBy } = req.body as {
+      title?: string;
+      description?: string;
+      priority?: string;
+      departmentId?: number;
+      /** Ignorado para email: el servidor usa siempre req.authUser.email en created_by_email */
+      createdByEmail?: string;
+      /** Solo admin: nombre del creador sustituto; empleado/supervisor ignoran el body */
+      createdBy?: string;
+    };
     if (!title || !description || !priority || !departmentId) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
 
-    let author = user.name;
+    const sessionEmail = normalizeEmail(user.email);
+    if (!sessionEmail) {
+      res.status(400).json({ error: "Sesión sin email de usuario" });
+      return;
+    }
+
+    /** Nombre mostrado: JWT (el cliente no debe mandar email; created_by_email siempre desde JWT salvo admin con usuario resuelto). */
+    let author =
+      typeof user.name === "string" && user.name.trim().length > 0 ? user.name.trim() : sessionEmail;
     let createdByUserId: number | null = user.id;
-    let createdByEmail = normalizeEmail(user.email);
+    let createdByEmail = sessionEmail;
 
     if (user.role === "admin" && typeof createdBy === "string" && createdBy.trim()) {
       const raw = createdBy.trim();
@@ -97,7 +113,7 @@ router.post("/tickets", async (req, res) => {
         .where(sql`lower(trim(${usersTable.name})) = lower(trim(${raw}))`);
       author = target?.name ?? raw;
       createdByUserId = target?.id ?? null;
-      createdByEmail = target ? normalizeEmail(target.email) : normalizeEmail(user.email);
+      createdByEmail = target ? normalizeEmail(target.email) : sessionEmail;
     }
 
     const [ticket] = await db

@@ -62,7 +62,6 @@ export default function NewTicketScreen() {
           description: description.trim(),
           priority,
           departmentId,
-          createdBy: user.name,
         },
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

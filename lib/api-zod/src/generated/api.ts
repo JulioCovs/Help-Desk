@@ -110,7 +110,7 @@ export const CreateTicketBody = zod.object({
   "description": zod.string(),
   "priority": zod.enum(['low', 'medium', 'high', 'urgent']),
   "departmentId": zod.number(),
-  "createdBy": zod.string()
+  "createdBy": zod.string().optional().describe('Opcional. Solo admin puede indicar nombre de otro usuario; empleado\/supervisor: el servidor usa siempre req.authUser (nombre y email del JWT).')
 })
 
 

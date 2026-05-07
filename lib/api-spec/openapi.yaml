@@ -411,12 +411,14 @@ components:
           type: integer
         createdBy:
           type: string
+          description: >-
+            Opcional. Solo admin puede indicar nombre de otro usuario;
+            empleado/supervisor: el servidor usa siempre req.authUser (nombre y email del JWT).
       required:
         - title
         - description
         - priority
         - departmentId
-        - createdBy
 
     UpdateTicketInput:
       type: object
