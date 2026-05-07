@@ -15,7 +15,9 @@
       "android": {
         "buildType": "apk"
       },
-      "env": {}
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://help-desk-production-c1fd.up.railway.app"
+      }
     },
     "production": {
       "node": "20.18.0",
@@ -23,7 +25,9 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "env": {}
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://help-desk-production-c1fd.up.railway.app"
+      }
     }
   },
   "submit": {

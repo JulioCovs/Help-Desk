@@ -46,5 +46,6 @@ export function resolveApiBaseUrl(): string | null {
     return PRODUCTION_API_BASE_URL;
   }
 
-  return null;
+  /** Release (APK/AAB): mismo origen Railway que EAS `env.EXPO_PUBLIC_API_URL`; evita null si olvidaste secretos. */
+  return PRODUCTION_API_BASE_URL;
 }
