@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import {
   useGetDepartments,
   useCreateTicket,
+  type CreateTicketInput,
   type Department,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -56,20 +57,28 @@ export default function NewTicketScreen() {
 
     setIsSubmitting(true);
     try {
-      await createTicketMutation.mutateAsync({
-        data: {
-          title: title.trim(),
-          description: description.trim(),
-          priority,
-          departmentId,
-        },
-      });
+      const deptId = Math.trunc(Number(departmentId));
+      if (!Number.isFinite(deptId) || deptId <= 0) {
+        Alert.alert("Error", "Departamento inválido");
+        return;
+      }
+
+      const data: CreateTicketInput = {
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        departmentId: deptId,
+      };
+
+      await createTicketMutation.mutateAsync({ data });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["getTickets"] });
       queryClient.invalidateQueries({ queryKey: ["getStats"] });
       router.back();
-    } catch {
-      Alert.alert("Error", "No se pudo crear el ticket");
+    } catch (e: unknown) {
+      const msg =
+        e instanceof Error && e.message ? e.message : "No se pudo crear el ticket";
+      Alert.alert("Error", msg);
     } finally {
       setIsSubmitting(false);
     }

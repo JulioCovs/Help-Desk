@@ -157,6 +157,8 @@ export default function HomeScreen() {
           <Text style={styles.userName}>{user?.name ?? "Usuario"}</Text>
         </View>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo ticket"
           onPress={() => router.push("/new-ticket")}
           style={({ pressed }) => [styles.newBtn, pressed && { opacity: 0.85 }]}
         >

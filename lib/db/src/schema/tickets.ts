@@ -17,17 +17,17 @@ export const ticketsTable = pgTable("tickets", {
   createdBy: text("created_by").notNull(),
   /** Quién creó el ticket (usuario auth); null en datos legacy o creación admin sin usuario resuelto */
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id),
-  /** Email del creador (normalizado en inserción/ backfill) — filtro principal para empleados */
+  /** Email del creador (POST lo rellena desde JWT; columna nullable en BD — sin NOT NULL) */
   createdByEmail: text("created_by_email"),
   assignedTo: text("assigned_to"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-/** createdByEmail lo rellena el api-server desde JWT; puede omitirse en inserts parciales. */
+/** Inserts manuales: createdByEmail opcional (el servidor lo rellena en POST /tickets). */
 export const insertTicketSchema = createInsertSchema(ticketsTable, {
-  createdByEmail: z.string().trim().optional().nullable(),
-  createdByUserId: z.number().int().positive().optional().nullable(),
+  createdByEmail: z.union([z.string(), z.null()]).optional(),
+  createdByUserId: z.union([z.number().int(), z.null()]).optional(),
 }).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type Ticket = typeof ticketsTable.$inferSelect;

@@ -4,8 +4,20 @@ import { eq, sql, and, or } from "drizzle-orm";
 import { requireAuth } from "../auth/middleware";
 import { canAccessTicket } from "../auth/access";
 import { normalizeEmail } from "../lib/email-normalize";
+import type { AuthUser } from "../auth/types";
 
 const router: IRouter = Router();
+
+const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+type TicketPriority = (typeof TICKET_PRIORITIES)[number];
+
+/** Email para created_by_email: solo JWT + BD; nunca req.body. */
+async function resolveCreatorEmail(auth: AuthUser): Promise<string | null> {
+  const fromJwt = normalizeEmail(auth.email);
+  if (fromJwt) return fromJwt;
+  const [row] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, auth.id));
+  return row?.email ? normalizeEmail(row.email) : null;
+}
 
 router.use(requireAuth);
 
@@ -78,44 +90,47 @@ router.get("/tickets", async (req, res) => {
 router.post("/tickets", async (req, res) => {
   try {
     const user = req.authUser!;
-    const { title, description, priority, departmentId, createdBy } = req.body as {
-      title?: string;
-      description?: string;
-      priority?: string;
-      departmentId?: number;
-      /** Ignorado para email: el servidor usa siempre req.authUser.email en created_by_email */
-      createdByEmail?: string;
-      /** Solo admin: nombre del creador sustituto; empleado/supervisor ignoran el body */
-      createdBy?: string;
-    };
-    if (!title || !description || !priority || !departmentId) {
+    const b = req.body as Record<string, unknown>;
+
+    const title = typeof b.title === "string" ? b.title.trim() : "";
+    const description = typeof b.description === "string" ? b.description.trim() : "";
+    const deptParsed = Number(b.departmentId);
+    const priorityRaw = typeof b.priority === "string" ? b.priority.toLowerCase().trim() : "";
+    const createdByOptional =
+      typeof b.createdBy === "string" && b.createdBy.trim() ? b.createdBy.trim() : undefined;
+
+    if (!title || !description) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }
-
-    let sessionEmail = normalizeEmail(user.email);
-    if (!sessionEmail) {
-      const [row] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
-      if (row?.email) sessionEmail = normalizeEmail(row.email);
+    if (!Number.isFinite(deptParsed) || deptParsed <= 0) {
+      res.status(400).json({ error: "departmentId inválido" });
+      return;
     }
+    if (!TICKET_PRIORITIES.includes(priorityRaw as TicketPriority)) {
+      res.status(400).json({ error: "priority inválida" });
+      return;
+    }
+    const priority = priorityRaw as TicketPriority;
+    const departmentId = deptParsed;
 
-    /** Nombre mostrado: JWT; created_by_email siempre del servidor (sesión o usuario resuelto por admin). */
+    let createdByEmail: string | null = await resolveCreatorEmail(user);
+
     let author =
       typeof user.name === "string" && user.name.trim().length > 0
         ? user.name.trim()
-        : sessionEmail || `user-${user.id}`;
+        : createdByEmail || `user-${user.id}`;
     let createdByUserId: number | null = user.id;
-    let createdByEmail: string | null = sessionEmail || null;
 
-    if (user.role === "admin" && typeof createdBy === "string" && createdBy.trim()) {
-      const raw = createdBy.trim();
+    if (user.role === "admin" && createdByOptional) {
+      const raw = createdByOptional;
       const [target] = await db
         .select()
         .from(usersTable)
         .where(sql`lower(trim(${usersTable.name})) = lower(trim(${raw}))`);
       author = target?.name ?? raw;
       createdByUserId = target?.id ?? null;
-      createdByEmail = target ? normalizeEmail(target.email) : sessionEmail || null;
+      createdByEmail = target ? normalizeEmail(target.email) : createdByEmail;
     }
 
     const [ticket] = await db
