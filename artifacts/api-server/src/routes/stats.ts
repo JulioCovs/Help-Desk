@@ -21,7 +21,7 @@ router.get("/stats", async (req, res) => {
   try {
     const user = req.authUser!;
 
-    /** Empleado: por ID de usuario (preferido) o por email del creador (único, estable). */
+    /** Solo empleado: agregados de sus tickets (email en sesión). Admin y supervisor: sin filtro (totales globales). */
     const emailNorm = normalizeEmail(user.email);
     const ticketWhere =
       user.role === "employee"
@@ -29,9 +29,7 @@ router.get("/stats", async (req, res) => {
             eq(ticketsTable.createdByUserId, user.id),
             sql`lower(trim(coalesce(${ticketsTable.createdByEmail}, ''))) = ${emailNorm}`,
           )
-        : user.role === "manager" && user.departmentId != null
-          ? eq(ticketsTable.departmentId, user.departmentId)
-          : undefined;
+        : undefined;
 
     const ticketSelect = db
       .select({
@@ -46,20 +44,7 @@ router.get("/stats", async (req, res) => {
 
     const ticketQuery = ticketWhere ? ticketSelect.where(ticketWhere) : ticketSelect;
 
-    if (user.role === "employee") {
-      const compiled = ticketQuery.toSQL();
-      console.log("[stats/debug] JWT user.email (from req.authUser):", user.email);
-      console.log("[stats/debug] normalized email (filter):", emailNorm);
-      console.log("[stats/debug] JWT user.id:", user.id, "role:", user.role);
-      console.log("[stats/debug] Drizzle SQL:", compiled.sql);
-      console.log("[stats/debug] Drizzle params:", compiled.params);
-    }
-
     const rows = await ticketQuery;
-
-    if (user.role === "employee") {
-      console.log("[stats/debug] SQL aggregate row(s) returned:", JSON.stringify(rows));
-    }
 
     const ticketStats = { ...EMPTY_AGG, ...rows[0] };
 

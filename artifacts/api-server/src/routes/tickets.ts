@@ -16,7 +16,7 @@ router.get("/tickets", async (req, res) => {
 
     const conditions = [];
 
-    /** Solo empleados: tickets propios (user id o email del creador). Admin y supervisor ven toda la tabla. */
+    /** Solo empleado: sus tickets (JWT email / user id). Admin y supervisor: sin filtro de filas. */
     if (user.role === "employee") {
       const emailNorm = normalizeEmail(user.email);
       conditions.push(
@@ -93,17 +93,19 @@ router.post("/tickets", async (req, res) => {
       return;
     }
 
-    const sessionEmail = normalizeEmail(user.email);
+    let sessionEmail = normalizeEmail(user.email);
     if (!sessionEmail) {
-      res.status(400).json({ error: "Sesión sin email de usuario" });
-      return;
+      const [row] = await db.select().from(usersTable).where(eq(usersTable.id, user.id));
+      if (row?.email) sessionEmail = normalizeEmail(row.email);
     }
 
-    /** Nombre mostrado: JWT (el cliente no debe mandar email; created_by_email siempre desde JWT salvo admin con usuario resuelto). */
+    /** Nombre mostrado: JWT; created_by_email siempre del servidor (sesión o usuario resuelto por admin). */
     let author =
-      typeof user.name === "string" && user.name.trim().length > 0 ? user.name.trim() : sessionEmail;
+      typeof user.name === "string" && user.name.trim().length > 0
+        ? user.name.trim()
+        : sessionEmail || `user-${user.id}`;
     let createdByUserId: number | null = user.id;
-    let createdByEmail = sessionEmail;
+    let createdByEmail: string | null = sessionEmail || null;
 
     if (user.role === "admin" && typeof createdBy === "string" && createdBy.trim()) {
       const raw = createdBy.trim();
@@ -113,7 +115,7 @@ router.post("/tickets", async (req, res) => {
         .where(sql`lower(trim(${usersTable.name})) = lower(trim(${raw}))`);
       author = target?.name ?? raw;
       createdByUserId = target?.id ?? null;
-      createdByEmail = target ? normalizeEmail(target.email) : sessionEmail;
+      createdByEmail = target ? normalizeEmail(target.email) : sessionEmail || null;
     }
 
     const [ticket] = await db

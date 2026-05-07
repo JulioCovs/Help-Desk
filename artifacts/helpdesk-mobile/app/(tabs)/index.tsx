@@ -171,7 +171,7 @@ export default function HomeScreen() {
           No se pudo cargar el resumen. Tira hacia abajo para reintentar.
         </Text>
       ) : null}
-      <View style={[styles.statsGrid, statsLoading && styles.statsGridLoading]}>
+      <View style={styles.statsGrid}>
         {statsSummary(displayStats).map((row) => (
           <StatCard
             key={row.label}
@@ -304,9 +304,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
     marginBottom: 24,
-  },
-  statsGridLoading: {
-    opacity: 0.65,
   },
   statCard: {
     flex: 1,
