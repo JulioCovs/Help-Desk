@@ -33,8 +33,6 @@ setAuthTokenGetter(async () => {
   }
 });
 
-syncApiBaseUrl();
-
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
@@ -56,6 +54,10 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  useEffect(() => {
+    syncApiBaseUrl();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

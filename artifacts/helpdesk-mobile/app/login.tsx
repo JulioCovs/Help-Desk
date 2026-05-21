@@ -72,9 +72,19 @@ export default function LoginScreen() {
         user?: { name: string; email: string; role: Role };
         token?: string;
         error?: string;
+        message?: string;
       };
 
       if (!res.ok || !data.token || !data.user) {
+        const railwayDown =
+          res.status === 404 &&
+          typeof data.message === "string" &&
+          data.message.toLowerCase().includes("application not found");
+        if (railwayDown) {
+          throw new Error(
+            "El servidor API no está desplegado en Railway. Comprueba el servicio api-server y EXPO_PUBLIC_API_URL.",
+          );
+        }
         throw new Error(typeof data.error === "string" ? data.error : `HTTP ${res.status}`);
       }
 
