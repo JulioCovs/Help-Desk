@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "rogINc5zG9C7kizk8C_Wq"
+uri = "file://helpdesk-proyecto.tar.gz"
+type = "unspecified"
+title = "HelpDesk - Código Fuente Completo"

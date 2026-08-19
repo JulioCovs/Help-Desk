@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 18.9.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "node": "20.18.0",
+      "developmentClient": false,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://help-desk-production-c1fd.up.railway.app"
+      }
+    },
+    "production": {
+      "node": "20.18.0",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://help-desk-production-c1fd.up.railway.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

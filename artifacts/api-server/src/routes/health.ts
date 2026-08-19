@@ -1,0 +1,20 @@
+import { Router, type IRouter } from "express";
+import { pool } from "@workspace/db";
+
+const router: IRouter = Router();
+
+router.get("/healthz", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ status: "ok", database: "up" });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(503).json({
+      status: "error",
+      database: "down",
+      message,
+    });
+  }
+});
+
+export default router;

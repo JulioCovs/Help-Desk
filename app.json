@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Help Desk Reports",
+    "slug": "help-desk-reports",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "sdkVersion": "50.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.juliocova10.workspace",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e2e210fd-81ea-4d88-8b55-52fd6925be8d"
+      }
+    },
+    "owner": "juliocova10"
+  }
+}

@@ -1,0 +1,9 @@
+# Railway: Config as Code
+# https://docs.railway.app/deploy/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.api-server"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"

@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "HelpDesk Mobile"
+version = "1.0.0"
+id = "artifacts/helpdesk-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18129
+
+[services.development]
+run = "pnpm --filter @workspace/helpdesk-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/helpdesk-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/helpdesk-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "18129"
+BASE_PATH = "/"

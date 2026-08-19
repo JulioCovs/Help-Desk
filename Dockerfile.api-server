@@ -1,0 +1,30 @@
+# Imagen del api-server (Express). Contexto de build = raíz del monorepo.
+# Railway: nuevo servicio → conectar repo → Dockerfile path = Dockerfile.api-server (raíz).
+# Variables en Railway (servicio api-server): DATABASE_URL, JWT_SECRET (≥16 chars), PORT es automático.
+
+FROM node:20-bookworm-slim AS runner
+
+WORKDIR /app
+
+# Habilitamos corepack para usar pnpm
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+
+# Copiamos solo los archivos necesarios de configuración
+# Eliminamos pnpm-lock.yaml de la lista para evitar errores de "not found"
+COPY package.json pnpm-workspace.yaml ./
+COPY lib ./lib
+COPY scripts ./scripts
+COPY artifacts ./artifacts
+
+# Cambiamos a 'pnpm install' sin --frozen-lockfile para que Railway genere uno nuevo
+RUN pnpm install
+
+# Construcción del servidor
+RUN pnpm --filter @workspace/api-server run build
+
+ENV NODE_ENV=production
+
+# Railway inyecta PORT; localmente puedes usar API_PORT o PORT (por defecto 3001 en index.ts). EXPOSE documenta el puerto habitual del servicio.
+EXPOSE 3001
+
+CMD ["node", "artifacts/api-server/dist/index.mjs"]
